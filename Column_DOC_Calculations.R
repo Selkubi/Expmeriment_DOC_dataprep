@@ -76,3 +76,5 @@ ggplot(data)+
                     labels=c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name=NULL)+
   geom_col(position="fill", aes(x=sample_date, y=value, fill=interaction(variable, sample_date>"S10")))+
   theme_bw()+theme(panel.grid = element_blank())
+
+### Other graps
