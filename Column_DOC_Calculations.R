@@ -69,3 +69,10 @@ ggplot(data)+
   geom_col(aes(x=sample_date, y=value, fill=interaction(variable, sample_date>"S10")))+theme_bw()+theme(panel.grid = element_blank())+
   xlab("Sampling day")+ylab(expression(paste(Delta, "DOC (um C/L)")))
 
+### The proportional C consumption plots
+ggplot(data)+
+  facet_grid(~sample_date>"S10", scales="free_x", labeller=as_labeller(c('FALSE'="Before Treatment", 'TRUE'="After Treatment")))+
+  scale_fill_manual(values=scico::scico(palette="bamO", 6, alpha=1, direction=-1, begin=0.1, end=0.7), 
+                    labels=c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name=NULL)+
+  geom_col(position="fill", aes(x=sample_date, y=value, fill=interaction(variable, sample_date>"S10")))+
+  theme_bw()+theme(panel.grid = element_blank())
