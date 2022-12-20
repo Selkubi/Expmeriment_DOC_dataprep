@@ -44,6 +44,7 @@ ggplot(DOC_data[replicate=="F"])+
 
 
 #Calculate the carbon consumption of each column
+write.csv(table, "DOC_consumption.csv")
 table = dcast(data=mean_values, sample_date ~ column_no)
 table=table[,.(col1=C0-C1, col2=C1-C2, col3=C2-C3), by=.(sample_date)]
 table=melt(table)
@@ -71,10 +72,16 @@ ggplot(data)+
 
 ### The proportional C consumption plots
 ggplot(data)+
-  facet_grid(~sample_date>"S10", scales="free_x", labeller=as_labeller(c('FALSE'="Before Treatment", 'TRUE'="After Treatment")))+
+  facet_grid(~sample_date>"S10", scales="free_x", labeller=as_labeller(c('FALSE'="Before Reversal", 'TRUE'="After Reversal")))+
   scale_fill_manual(values=scico::scico(palette="bamO", 6, alpha=1, direction=-1, begin=0.1, end=0.7), 
                     labels=c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name=NULL)+
   geom_col(position="fill", aes(x=sample_date, y=value, fill=interaction(variable, sample_date>"S10")))+
   theme_bw()+theme(panel.grid = element_blank())
 
-### Other graps
+### Other graphs
+# DOC consumption in each column throughout the sampling time
+ggplot(data)+
+  facet_wrap(~variable)+
+  geom_point(aes(x=sample_date, y=value))+
+  geom_vline(xintercept="S10", color="red", linetype="dashed")
+
