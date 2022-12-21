@@ -60,7 +60,6 @@ ggplot(DOC_data[replicate=="F"])+
   theme(legend.position="right")+theme_bw()
 
 #Calculate the carbon consumption of each column
-write.csv(table, "DOC_consumption.csv")
 table = dcast(data=mean_values, sample_date ~ column_no)
 table=table[,.(col1=C0-C1, col2=C1-C2, col3=C2-C3), by=.(sample_date)]
 table=melt(table)
