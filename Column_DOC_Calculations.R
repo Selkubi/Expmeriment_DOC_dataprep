@@ -21,6 +21,23 @@ DOC_data$column_no=factor(DOC_data$column_no, levels=c("C0", "C1", "C2", "C3"))
 DOC_data=DOC_data[DOC<5000] # These are outliers (contamination in this case when DOC>5mgC/L)
 DOC_data=subset(DOC_data, subset=!(sample_date>"S10" & replicate=="O")) # These are an experimental error. So the replicate O was flooded at this date
 
+
+C0=DOC_data[column_no=="C0"]
+C1=DOC_data[column_no=="C1"]
+C2=DOC_data[column_no=="C2"]
+C3=DOC_data[column_no=="C3"]
+
+C0$C1consumed=C0$DOC - C1$DOC[match(C0$replicate, C1$replicate)]
+C1$C2consumed=C1$DOC - C2$DOC[match(C1$replicate, C2$replicate)]
+C2$C3consumed=C2$DOC - C3$DOC[match(C2$replicate, C3$replicate)]
+
+data=C0[C1[,c("sample_date", "replicate", "C2consumed")], on=.(sample_date, replicate)]
+data=data[C2[,c("sample_date", "replicate", "C3consumed")], on=.(sample_date, replicate)]
+data=data[,c("replicate", "sample_date", "C1consumed","C2consumed","C3consumed")]
+
+write.csv(data, "DOC_consumption.csv")
+
+
 #Put the individual sample names to be deleted. These sampling dates follows the contamination days, so no need to have them either. 
 #It is important to have their names individually
 DOC_data=DOC_data[!DOC_data$Sample %in% c("S07_A_C0","S08_A_C1", "S08_A_C2","S08_A_C3,",
@@ -41,7 +58,6 @@ ggplot(DOC_data[replicate=="F"])+
   facet_grid( ~sample_date)+
   geom_line(aes(y=DOC, x=column_no, group=replicate), color="yellow1", lwd=2)+
   theme(legend.position="right")+theme_bw()
-
 
 #Calculate the carbon consumption of each column
 write.csv(table, "DOC_consumption.csv")
