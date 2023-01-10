@@ -76,9 +76,9 @@ ggplot(table)+
   geom_col(aes(x=sample_date, y=value, fill=interaction(variable, sample_date>"S10")))+theme_bw()+theme(panel.grid = element_blank())+
   xlab("Sampling day")+ylab(expression(paste(Delta, "DOC (um C/L)")))
 
-data=table[!table$sample_date%in%c("S05", "S06")]
+data2=table[!table$sample_date%in%c("S05", "S06")]
 
-ggplot(data)+
+ggplot(data2)+
   facet_grid(~sample_date>"S10", scales="free_x", labeller=as_labeller(c('FALSE'="Before Treatment", 'TRUE'="After Treatment")))+
   scale_fill_manual(values=scico::scico(palette="bamO", 6, alpha=1, direction=-1, begin=0.1, end=0.7), 
                     labels=c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name=NULL)+
@@ -86,7 +86,7 @@ ggplot(data)+
   xlab("Sampling day")+ylab(expression(paste(Delta, "DOC (um C/L)")))
 
 ### The proportional C consumption plots
-ggplot(data)+
+ggplot(data2)+
   facet_grid(~sample_date>"S10", scales="free_x", labeller=as_labeller(c('FALSE'="Before Reversal", 'TRUE'="After Reversal")))+
   scale_fill_manual(values=scico::scico(palette="bamO", 6, alpha=1, direction=-1, begin=0.1, end=0.7), 
                     labels=c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name=NULL)+
@@ -95,8 +95,28 @@ ggplot(data)+
 
 ### Other graphs
 # DOC consumption in each column throughout the sampling time
-ggplot(data)+
+ggplot(data2)+
   facet_wrap(~variable)+
   geom_point(aes(x=sample_date, y=value))+
   geom_vline(xintercept="S10", color="red", linetype="dashed")
+
+### Biomass correction of c consumtion
+Sample_biomass=fread("C:/Users/c7701233/Nextcloud/Column-Experiment/EEA/Cell_Counts_standardized.csv")
+Sample_biomass$col_no=factor(Sample_biomass$col_no, levels = c("1", "2", "3"), labels=c("Col1", "Col2", "Col3"))
+
+data_subset=data[sample_date%in%c("S10", "S13", "S16", "S19")]
+data_subset[sample_date=="S10"]$sample_date="S09"
+colnames(data_subset)=c("replicate", "sample_date", "Col1", "Col2", "Col3")
+data_subset2=melt(data_subset, id.vars = c("replicate", "sample_date"), 
+     measure.vars=c("Col1","Col2","Col3"))
+data_all=merge(data_subset2, Sample_biomass, all.x=F, 
+      by.x=c("replicate", "sample_date", "variable"), 
+      by.y=c("replicate", "Sample_date", "col_no"))
+
+data_all[,normalized_doc:=(value/Cell_pro_ml)]
+
+ggplot(data_all)+
+  facet_grid( ~sample_date)+
+  geom_line(aes(y=value, x=variable, group=replicate, color=replicate), lwd=2)+
+  theme(legend.position="right")+theme_bw()
 
