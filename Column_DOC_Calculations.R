@@ -116,7 +116,13 @@ data_all=merge(data_subset2, Sample_biomass, all.x=F,
 data_all[,normalized_doc:=(value/Cell_pro_ml)]
 
 ggplot(data_all)+
-  facet_grid( ~sample_date)+
-  geom_line(aes(y=value, x=variable, group=replicate, color=replicate), lwd=2)+
-  theme(legend.position="right")+theme_bw()
+  facet_grid( ~sample_date, labeller = as_labeller(c(S09="Day0", S13="Day3", S16="Day10", S19="Day19")))+
+  geom_boxplot(aes(y=(normalized_doc), x=variable))+
+  theme(axis.text = element_text(size=16))+theme_bw()+ylab("Biomass Normalized DOC")
 
+
+as_labeller(c(disp_PC1="PC1", disp_PC2="PC2", disp_PC_all="PC1-PC14"))
+#Anova on DOC consumption
+anova=aov((data_all$normalized_doc)~(sample_date*variable), data=data_all)
+summary(anova)
+TukeyHSD(anova)
