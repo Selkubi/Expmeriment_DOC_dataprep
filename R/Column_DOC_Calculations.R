@@ -1,3 +1,4 @@
+#setwd("..")
 library(ggplot2)
 library(data.table)
 
@@ -47,6 +48,7 @@ DOC_data=DOC_data[!DOC_data$Sample %in% c("S07_A_C0","S08_A_C1", "S08_A_C2","S08
 mean_values=DOC_data[ ,.(Mean=mean(DOC, na.rm=T)), by=.(sample_date, column_no)]
 
 #The general average plot with S05 ans S06 discareded since these are still data that needs justiciation to set as outlier
+source("R/plotting_functions.R")
 ggplot(DOC_data[!(sample_date=="S05"| sample_date=="S06")])+
  facet_grid( ~sample_date)+
  geom_line(aes(y=DOC, x=column_no, group=replicate, color=replicate))+
@@ -104,25 +106,56 @@ ggplot(data2)+
 Sample_biomass=fread("C:/Users/c7701233/Nextcloud/Column-Experiment/EEA/BActerial_Abundance/Cell_Counts_standardized.csv")
 Sample_biomass$col_no=factor(Sample_biomass$col_no, levels = c("1", "2", "3"), labels=c("Col1", "Col2", "Col3"))
 
-data_subset=data[sample_date%in%c("S10", "S13", "S16", "S19")]
+data_subset=data[sample_date%in%c("S10","S11","S12" ,"S13", "S14","S15","S16", "S17","S18","S19")]
 data_subset[sample_date=="S10"]$sample_date="S09"
 colnames(data_subset)=c("replicate", "sample_date", "Col1", "Col2", "Col3")
 data_subset2=melt(data_subset, id.vars = c("replicate", "sample_date"), 
      measure.vars=c("Col1","Col2","Col3"))
+data_subset2$sample_date=factor(data_subset2$sample_date, levels = c("S09","S11","S12" ,"S13", "S14","S15","S16", "S17","S18","S19"), 
+                                                          labels=c("Before \nReversal", "Day1","Day2","Day3", "Day7","Day9", "Day10","Day12","Day14","Day17"))
+
+date_labels = c("Day1","Day2","Day3", "Day7","Day9", "Day10","Day12","Day14","Day17")
+data_subset2$highlight = factor(ifelse(data_subset2$sample_date=="Before \nReversal" & data_subset2$variable=="Col1", "before C1", 
+                                ifelse(data_subset2$sample_date=="Before \nReversal" & data_subset2$variable=="Col2", "before C2",
+                                ifelse(data_subset2$sample_date=="Before \nReversal" & data_subset2$variable=="Col3", "before C3", 
+                                ifelse(data_subset2$sample_date %in% date_labels & data_subset2$variable=="Col1", "after C1",
+                                       ifelse(data_subset2$sample_date %in% date_labels & data_subset2$variable=="Col2", "after C2",
+                                              ifelse(data_subset2$sample_date %in% date_labels & data_subset2$variable=="Col3", "after C3",
+                                "NA")))))))
+
+
+
 data_all=merge(data_subset2, Sample_biomass, all.x=F, 
       by.x=c("replicate", "sample_date", "variable"), 
       by.y=c("replicate", "Sample_date", "col_no"))
-data_all$sample_date=factor(data_all$sample_date, levels = c("S09", "S13", "S16", "S19"), labels=c("Day0", "Day3", "Day10", "Day17"))
+data_all$sample_date=factor(data_all$sample_date, levels = c("S09", "S11", "S13", "S16", "S19"), labels=c("Before \nReversal", "Day1","Day3", "Day10", "Day17"))
 
 
 data_all[,normalized_doc:=(value/Cell_pro_ml)]
 
-ggplot(data_all)+
+ggplot(data_subset2)+
   facet_grid( ~variable)+
-  geom_boxplot(aes(y=(value), x=sample_date, fill=sample_date))+
-  theme_boxplot()+fill_selected()+
+  geom_boxplot(aes(y=(value), x=sample_date, fill=highlight))+
+  theme_boxplot()+fill_column_color()+
   ylab("ΔDOC(Δ ug C/L)")
 
+ggplot(data_subset2)+
+  facet_grid(~variable)+
+  geom_boxplot(aes(y=(value), x=sample_date, fill=highlight))+
+  theme_boxplot()+fill_sample_date_col_no()+
+  ylab("ΔDOC(Δ ug C/L)")
+
+ggplot(data_subset2)+
+  facet_grid(rows=vars(variable))+
+  geom_boxplot(aes(y=(value), x=sample_date, fill=highlight))+
+  theme_boxplot()+fill_sample_date_col_no()+
+  ylab("ΔDOC(Δ ug C/L)")
+
+ggplot(data_subset2)+
+  facet_grid( ~variable)+
+  geom_boxplot(aes(y=(value), x=sample_date, fill=highlight))+
+  theme_boxplot()+fill_sample_date_col_no()+
+  ylab("ΔDOC(Δ ug C/L)")+coord_flip()
 
 ggplot(data_all)+
   facet_grid( ~variable)+
