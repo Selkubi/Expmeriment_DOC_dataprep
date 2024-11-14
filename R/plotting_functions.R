@@ -1,11 +1,11 @@
 
-optical_plots_theme = theme_bw()+
-    theme(axis.text = element_text(size = 12), 
-          axis.title = element_text(size = 12), 
-          text =  element_text(size = 12),
+optical_plots_theme = function() {
+  theme_bw()+
+    theme(text =  element_text(size = 12),
           axis.text.x = element_text(size = 12, vjust = 1, hjust = 0.5),
           strip.background = element_blank(), 
           panel.grid = element_blank())
+  }
 
 set_coloring_column = function(data, col_name) {
   data$highlight = factor(ifelse(data$sample_date %in% c("S08", "S09") & data$variable == "Col1", "before C1", 
@@ -49,4 +49,4 @@ n_fun = function(x){
   return(data.frame(y = max(x, na.rm = TRUE), label = paste0(length(x))))
 }                                                      
 
-observation_numbers = stat_summary(fun.data = n_fun, geom = "text", na.rm = TRUE, aes(vjust = 0))
+observation_numbers = stat_summary(fun.data = n_fun, geom = "text", na.rm = TRUE, aes(vjust = -0.5))

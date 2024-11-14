@@ -1,6 +1,8 @@
 #setwd("..")
 library(ggplot2)
 library(data.table)
+library(ggtext)
+if(!dir.exists("output/plots")) {dir.create("output/plots")}
 
 ####Import the data####
 DOC_data <- data.table(read.csv("data/DOC_Final_pretreated_all.csv", col.names = c("Sample", "Date", "DOC", "DN")))
@@ -17,7 +19,7 @@ DOC_data$column_no <- factor(DOC_data$column_no, levels = c("C0", "C1", "C2", "C
 
 DOC_data <- DOC_data[DOC < 5000] # These are outliers (contamination in this case when DOC>5mgC/L)
 DOC_data <- subset(DOC_data, subset =! (sample_date > "S10" & replicate == "O")) # These are an experimental error. So the replicate O was flooded at this date
-write.csv(DOC_data, "DOC_per_column.csv")
+write.csv(DOC_data, "output/DOC_per_column.csv")
 
 C0 <- DOC_data[column_no == "C0"]
 colnames(C0) = c("Sample", "Date","DOC_C0","DN_C0","sample_date", "replicate","column_no")
@@ -90,7 +92,7 @@ ggplot(data2) +
   geom_vline(xintercept = "S10", color = "red", linetype = "dashed")
 
 ### Biomass correction of c consumtion
-Sample_biomass <- fread("C:/Users/c7701233/Nextcloud/Column-Experiment/EEA/BActerial_Abundance/Cell_Counts_standardized.csv")
+Sample_biomass <- fread("data/Cell_Counts_standardized.csv")
 Sample_biomass$col_no <- factor(Sample_biomass$col_no, levels = c("1", "2", "3"), labels = c("Col1", "Col2", "Col3"))
 
 data_subset <- DOC_consumption[sample_date %in% c("S10","S11","S12" ,"S13", "S14","S15","S16", "S17","S18","S19")]
@@ -145,22 +147,33 @@ Bio <- ggplot(data_all, aes(y = (Cell_pro_ml / 10^8), x = sample_date)) +
   ylab(bquote("Biomass "(10^8*cell~ml^-1))) + xlab ("Days")
 
 colnames(data_all)[4] <- "DOC"
-data_melted <- melt(data_all, id.vars = c("replicate", "sample_date", "variable", "highlight"), measure.vars = c("DOC", "plotting_cell_pro_ml", "plotting_normalized_doc"))
+data_melted <- melt(data_all, id.vars = c("replicate", "sample_date", "variable", "highlight"), 
+                    measure.vars = c("DOC", "plotting_cell_pro_ml", "plotting_normalized_doc"), 
+                    variable.name = "measurement")
 
 # Grid plot
 
-dose.labs <- c("DOC", "plotting_cell_pro_ml", "plotting_normalized_doc DOC")
-names(dose.labs) <- c("DOC", "plotting_cell_pro_ml", "plotting_normalized_doc")
-supp.labs <- c("Col1", "Col2", "Col3")
-names(supp.labs) <- c("Col1", "Col2", "Col3")
+enzyme_ratio_names <- c(
+  "DOC" = paste0("ΔDOC", "\n", "Δμg C L", '\u02C9', "¹"),
+  "plotting_cell_pro_ml" = paste0("Biomass","\n", "10⁸ cell mL", '\u02C9', "¹"),
+  "plotting_normalized_doc" = paste0("Normalised DOC","\n","Δμm C L", '\u02C9', "¹", "(10⁸ cell)", '\u02C9', "¹")
+)
 
-ggplot(data_melted, aes(x = sample_date, y = value)) +
-  facet_grid(variable.1 ~ variable, scales = "free") +
+biomass_normDOC <- ggplot(data_melted, aes(x = sample_date, y = value)) +
+  facet_grid(measurement ~ variable, scales = "free",  
+             labeller = labeller(measurement = enzyme_ratio_names),
+             switch = "y") +
   geom_boxplot(aes(fill = highlight, color = highlight), width = 0.5) +
   observation_numbers +
-  optical_plots_theme + fill_col_no + color_col_no +
-  xlab ("Days")
-  
+  optical_plots_theme() + fill_col_no + color_col_no +
+  xlab ("Days") + theme(axis.title.y = element_blank(), legend.position = "none") + 
+  scale_y_continuous(position = "right", expand = c(0.2, 0))
+
+grDevices::cairo_pdf('output/plots/biomass_normDOC.pdf', width = 7, height = 7, family = "helvetica", 
+                     pointsize = 12, symbolfamily = "helvetica")
+plot(biomass_normDOC)
+dev.off()
+
 ## Dissolved Nitrogen plot
 DOC_data <- DOC_data[sample_date %in% c("S08", "S10","S11","S12" ,"S13", "S14","S15","S16", "S17","S18","S19")]
 DOC_data[sample_date == "S10"]$sample_date = "S09"
