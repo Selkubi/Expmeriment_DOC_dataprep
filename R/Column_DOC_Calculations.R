@@ -114,13 +114,24 @@ biomass_normDOC <- ggplot(data_melted, aes(x = sample_date, y = value)) +
              labeller = labeller(measurement = enzyme_ratio_names),
              switch = "y") +
   geom_boxplot(aes(fill = highlight, color = highlight), width = 0.5) +
-  observation_numbers +
+  #observation_numbers +
   optical_plots_theme() + fill_col_no + color_col_no +
   xlab ("Days") + theme(axis.title.y = element_blank(), legend.position = "none") + 
   scale_y_continuous(position = "right", expand = c(0.2, 0))
 
+facet_labels <- data.frame(
+  variable = rep(levels(data_melted$variable), times = 3),  # Columns (left-to-right)
+  measurement = rep(levels(data_melted$measurement), each = 3),  # Rows (top-to-bottom)
+  label = paste0( "(",letters[1:9], ")")
+)
+
+all_biomass_norm <- biomass_normDOC +
+  geom_text(data = facet_labels, aes(x = levels(data_melted$sample_date)[1],  # Leftmost position
+                                     y = Inf,
+                                     label = label), hjust = 1,  vjust = 1.4, size = 4  )
+
 grDevices::cairo_pdf('output/plots/biomass_normDOC.pdf', width = 5, height = 5, family = "helvetica", 
                      pointsize = 12, symbolfamily = "helvetica")
-plot(biomass_normDOC)
+plot(all_biomass_norm)
 dev.off()
 
