@@ -3,6 +3,7 @@ library(ggplot2)
 library(data.table)
 library(ggtext)
 if(!dir.exists("output/plots")) {dir.create("output/plots")}
+source("R/plotting_functions.R")
 
 ####Import the data####
 DOC_data <- data.table(read.csv("data/DOC_Final_pretreated_all.csv", col.names = c("Sample", "Date", "DOC", "DN")))
@@ -44,46 +45,15 @@ DOC_data <- DOC_data[!DOC_data$Sample %in% c("S07_A_C0","S08_A_C1", "S08_A_C2","
 #Calculate the means of the same day replications
 mean_values <- DOC_data[, .(Mean = mean(DOC, na.rm = TRUE)), by = .(sample_date, column_no)]
 
-#The general average plot with S05 ans S06 discareded since these are still data that needs justiciation to set as outlier
-source("R/plotting_functions.R")
-ggplot(DOC_data[!(sample_date == "S05"| sample_date == "S06")]) +
- facet_grid( ~sample_date) +
- geom_line(aes(y = DOC, x = column_no, group = replicate, color = replicate)) +
- geom_line(data = mean_values[!(sample_date == "S05"| sample_date == "S06")], aes(x = column_no, y = Mean, group = sample_date), color = "red", lwd = 2) +
- geom_point(data = mean_values[!(sample_date  == "S05"| sample_date == "S06")], aes(x = column_no, y = Mean, group = sample_date), color = "blue", lwd = 5) +
- theme(legend.position = "right") + theme_bw()
-
-ggplot(DOC_data[replicate == "F"]) +
-  facet_grid( ~sample_date) +
-  geom_line(aes(y = DOC, x = column_no, group = replicate), color = "yellow1", lwd = 2) +
-  theme(legend.position = "right") + theme_bw()
-
 #Calculate the carbon consumption of each column
 table <- dcast(data = mean_values, sample_date ~ column_no)
 table <- table[, .(col1 = C0-C1, col2 = C1-C2, col3 = C2-C3), by = .(sample_date)]
 table <- melt(table)
 
-#For different palettes for the facets, do interaction(variable, sample_date>"S10") but I do it with hue for now
-ggplot(table) +
-  facet_grid(~sample_date>"S10", scales = "free_x", labeller = as_labeller(c('FALSE' = "Before Treatment", 'TRUE' = "After Treatment"))) +
-  scale_fill_manual(values = scico::scico(palette = "bamO", 6, alpha = 1, direction = -1, begin = 0.1, end = 0.7), 
-                    labels = c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name = NULL) +
-  geom_col(aes(x = sample_date, y = value, fill = interaction(variable, sample_date>"S10"))) +
-  theme_bw() + theme(panel.grid = element_blank()) +
-  xlab("Sampling day") + ylab(expression(paste(Delta, "DOC (um C/L)")))
 
 data2 <- table[!table$sample_date %in% c("S05", "S06")]
 
 convert_date_labels(data2)
-ggplot(data2) +
-  facet_grid(~sample_date>"S10", scales = "free_x", labeller = as_labeller(c('FALSE' = "Before Treatment", 'TRUE' = "After Treatment"))) +
-  scale_fill_manual(values = scico::scico(palette = "bamO", 6, alpha = 1, direction = -1, begin = 0.1, end = 0.7), 
-                    labels = c('Col 1', 'Col 2', 'Col 3', 'Col 1', 'Col 2', 'Col 3'), name = NULL) +
-  geom_col(aes(x = sample_date, y = value, fill = interaction(variable, sample_date>"S10"))) +
-  theme_bw() + theme(panel.grid  =  element_blank()) +
-  xlab("Sampling day") + ylab(expression(paste(Delta, "DOC (um C/L)")))
-
-
 ### Other graphs
 # DOC consumption in each column throughout the sampling time
 ggplot(data2) +
@@ -103,24 +73,20 @@ data_subset2 <- melt(data_subset, id.vars = c("replicate", "sample_date"),
 data_subset2$variable <- factor(data_subset2$variable, levels = c("C1consumed", "C2consumed", "C3consumed"), 
                              labels = c("Col1", "Col2", "Col3"))
 
-data_all <- merge(data_subset2, Sample_biomass, all.x = FALSE, 
-               by.x = c("replicate", "sample_date", "variable"), 
-               by.y = c("replicate", "Sample_date", "col_no"))
-
 data_subset2 <- set_coloring_column(data_subset2)
-data_subset2 <- convert_date_labels(data_subset2)
-data_subset2 <- convert_column_labels(data_subset2)
-
-reservoir <- unique(data_subset[, .(DOC_C0, sample_date)])
 
 DOC <- ggplot(data_subset2, aes(x = sample_date, y = (value))) +
   facet_wrap(~variable) +
   geom_boxplot(aes(fill = highlight, color = highlight), width=0.5) +
   geom_hline(yintercept = c(0), color = "red", linetype = "dashed") +
   observation_numbers +
-  optical_plots_theme + 
+  optical_plots_theme() + 
   fill_col_no + color_col_no +
   ylab("ΔDOC(Δ ug C/L)") + xlab("Days")
+
+data_all <- merge(data_subset2, Sample_biomass, all.x = FALSE, 
+                  by.x = c("replicate", "sample_date", "variable"), 
+                  by.y = c("replicate", "Sample_date", "col_no"))
 
 data_all[, log_cell_pro_ml := (log(Cell_pro_ml))]
 data_all[, plotting_cell_pro_ml := (Cell_pro_ml)/10^8]
@@ -130,22 +96,6 @@ data_all <- set_coloring_column(data_all)
 data_all <- convert_date_labels(data_all)
 data_all <- convert_column_labels(data_all)
 data_all <- data_all[-45, ]#quick remove the replicated sample
-
-NDOC <- ggplot(data_all, aes(y = (plotting_normalized_doc), x = sample_date)) +
-  facet_grid(~variable) +
-  geom_boxplot(aes(fill = highlight, color = highlight), width = 0.5) +
-  geom_hline(yintercept = c(0), color = "red", linetype = "dashed") +
-  observation_numbers +
-  optical_plots_theme + fill_col_no + color_col_no +
-  ylab(bquote(Δ~um~C~L^-1*~(10^8~cell)^-1)) + xlab("Days") 
-
-Bio <- ggplot(data_all, aes(y = (Cell_pro_ml / 10^8), x = sample_date)) +
-  facet_grid( ~variable) +
-  geom_boxplot(aes(fill = highlight, color = highlight), width = 0.5) + 
-  observation_numbers +
-  optical_plots_theme + fill_col_no + color_col_no +
-  ylab(bquote("Biomass "(10^8*cell~ml^-1))) + xlab ("Days")
-
 colnames(data_all)[4] <- "DOC"
 data_melted <- melt(data_all, id.vars = c("replicate", "sample_date", "variable", "highlight"), 
                     measure.vars = c("DOC", "plotting_cell_pro_ml", "plotting_normalized_doc"), 
@@ -164,33 +114,24 @@ biomass_normDOC <- ggplot(data_melted, aes(x = sample_date, y = value)) +
              labeller = labeller(measurement = enzyme_ratio_names),
              switch = "y") +
   geom_boxplot(aes(fill = highlight, color = highlight), width = 0.5) +
-  observation_numbers +
+  #observation_numbers +
   optical_plots_theme() + fill_col_no + color_col_no +
   xlab ("Days") + theme(axis.title.y = element_blank(), legend.position = "none") + 
   scale_y_continuous(position = "right", expand = c(0.2, 0))
 
-grDevices::cairo_pdf('output/plots/biomass_normDOC.pdf', width = 7, height = 7, family = "helvetica", 
+facet_labels <- data.frame(
+  variable = rep(levels(data_melted$variable), times = 3),  # Columns (left-to-right)
+  measurement = rep(levels(data_melted$measurement), each = 3),  # Rows (top-to-bottom)
+  label = paste0( "(",letters[1:9], ")")
+)
+
+all_biomass_norm <- biomass_normDOC +
+  geom_text(data = facet_labels, aes(x = levels(data_melted$sample_date)[1],  # Leftmost position
+                                     y = Inf,
+                                     label = label), hjust = 1,  vjust = 1.4, size = 4  )
+
+grDevices::cairo_pdf('output/plots/biomass_normDOC.pdf', width = 5, height = 5, family = "helvetica", 
                      pointsize = 12, symbolfamily = "helvetica")
-plot(biomass_normDOC)
+plot(all_biomass_norm)
 dev.off()
 
-## Dissolved Nitrogen plot
-DOC_data <- DOC_data[sample_date %in% c("S08", "S10","S11","S12" ,"S13", "S14","S15","S16", "S17","S18","S19")]
-DOC_data[sample_date == "S10"]$sample_date = "S09"
-DOC_data$column_no <- factor(DOC_data$column_no, levels = c("C0", "C1", "C2", "C3"), labels = c("Reservoir","Col1", "Col2", "Col3"))
-colnames(DOC_data) <- c("Sample", "Date", "DOC", "DN", "sample_date", "replicate", "variable")
-
-DOC_data <- set_coloring_column(DOC_data)
-DOC_data = convert_date_labels(DOC_data)
-
-ggplot(DOC_data, aes(y = (DN), x = sample_date))+
-  facet_grid( ~variable)+
-  geom_boxplot(aes(fill = highlight, color = highlight))+ 
- #observation_numbers()+
-  optical_plots_theme + fill_col_no + color_col_no +
-  ylab("DN (mg/L)")
-
-#Anova on DOC consumption
-anova <- aov((data_all$normalized_doc)~(sample_date*variable), data = data_all)
-summary(anova)
-TukeyHSD(anova)

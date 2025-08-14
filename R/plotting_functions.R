@@ -21,9 +21,9 @@ set_coloring_column = function(data, col_name) {
 
 convert_date_labels = function(data) {
   data$sample_date = factor(data$sample_date, 
-                              levels = c("S08", "S09", "S11", "S12" ,"S13", "S14","S15", "S16", "S17","S18","S19",
+                              levels = c("S08", "S11", "S12" ,"S13", "S14","S15", "S16", "S17","S18","S19",
                                          "S01", "S02", "S03", "S04", "S07", "S10"), 
-                              labels = c("0", "0", "1","2","3", "7","9", "10","12","14","17",
+                              labels = c("0",  "1","2","3", "7","9", "10","12","14","17",
                                        "S01", "S02", "S03", "S04", "S07", "0"))
   return(data)
 }
@@ -36,12 +36,12 @@ convert_column_labels = function(data) {
 }
 
 fill_col_no = scale_fill_manual(name =  "Column Location",
-                     values = c("#1741a3", "#4e8fc8", "#a698cc", "white", "white", "white", "grey"),
+                     values = c("#164C6B", "#F3A712", "#E4572E", "white", "white", "white"),
                      guide = "legend")
 
 
 color_col_no = scale_color_manual(name =  "Column Location",
-                      values = c("black", "black", "black", "#1741a3", "#4e8fc8", "#a698cc", "black"),
+                      values = c("black", "black", "black", "#164C6B", "#F3A712", "#E4572E"),
                       guide = "legend")
 
 
