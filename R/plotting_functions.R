@@ -21,9 +21,9 @@ set_coloring_column = function(data, col_name) {
 
 convert_date_labels = function(data) {
   data$sample_date = factor(data$sample_date, 
-                              levels = c("S08", "S11", "S12" ,"S13", "S14","S15", "S16", "S17","S18","S19",
+                              levels = c("S08", "S09","S11", "S12" ,"S13", "S14","S15", "S16", "S17","S18","S19",
                                          "S01", "S02", "S03", "S04", "S07", "S10"), 
-                              labels = c("0",  "1","2","3", "7","9", "10","12","14","17",
+                              labels = c("0",  "0", "1","2","3", "7","9", "10","12","14","17",
                                        "S01", "S02", "S03", "S04", "S07", "0"))
   return(data)
 }
